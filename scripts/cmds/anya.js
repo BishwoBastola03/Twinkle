@@ -14,61 +14,59 @@ module.exports = {
       en: ""
     },
     longDescription: {
-      en: "japnese anya text to speech"
+      en: "Chat with Anya forger"
     },
-    category: "𝗔𝗜",
+    category: "ai",
     guide: {
-      en: "{p}{n} japn [text]"
+      en: "{p}{n} [text]"
     }
   },
-  onStart: async function ({ api, event, args }) {
+  onStart: async function ({ api, event, args, message }) {
     try {
-      const {
-        createReadStream,
-        unlinkSync
-      } = fs;
+      const { createReadStream, unlinkSync } = fs;
+      const { resolve } = path;
+      const { messageID, threadID, senderID } = event;
 
-      const {
-        resolve
-      } = path;
+      const getUserInfo = async (api, userID) => {
+        try {
+          const userInfo = await api.getUserInfo(userID);
+          return userInfo[userID].firstName;
+        } catch (error) {
+          console.error(`Error fetching user info: ${error}`);
+          return '';
+        }
+      };
 
-      const {
-        messageID,
-        threadID,
-        senderID
-      } = event;
+      const [a, b, c, d] = ["Konichiwa", "senpai", "Hora"];
 
-      const name = "Anya"; 
-
-      const ranGreetVar = [`Konichiwa ${name}`, "Konichiwa senpai", "Hora"];
-      const ranGreet = ranGreetVar[Math.floor(Math.random() * ranGreetVar.length)];
+      const k = await getUserInfo(api, senderID);
+      const ranGreet = `${a} ${k} ${b}`;
 
       const chat = args.join(" ");
 
-      if (!args[0]) return api.sendMessage(`${ranGreet}`, threadID, messageID);
+      if (!args[0]) return message.reply(ranGreet);
 
-      const simRes = ` ${chat}`;
+      const tranChat = await axios.get(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=ja&dt=t&q=${encodeURIComponent(chat)}`);
 
+      const l = tranChat.data[0][0][0];
 
-      const text = encodeURIComponent(simRes);
+      const m = resolve(__dirname, 'cache', `${threadID}_${senderID}.wav`);
 
-      const audioPath = resolve(__dirname, 'cache', `${threadID}_${senderID}.wav`);
+      const n = await axios.get(`https://api.tts.quest/v3/voicevox/synthesis?text=${encodeURIComponent(l)}&speaker=3&fbclid=IwAR01Y4UydrYh7kvt0wxmExdzoFTL30VkXsLZZ2HjXjDklJsYy2UR3b9uiHA`);
 
-      const audioApi = await axios.get(`https://api.tts.quest/v3/voicevox/synthesis?text=${text}&speaker=3`);
+      const o = n.data.mp3StreamingUrl;
 
-      const audioUrl = audioApi.data.mp3StreamingUrl;
+      await global.utils.downloadFile(o, m);
 
-      await global.utils.downloadFile(audioUrl, audioPath);
+      const p = createReadStream(m);
 
-      const att = createReadStream(audioPath);
-
-      api.sendMessage({
-        body: simRes,
-        attachment: att
-      }, threadID, () => unlinkSync(audioPath));
+      message.reply({
+        body: l,
+        attachment: p
+      }, threadID, () => unlinkSync(m));
     } catch (error) {
       console.error(error);
-      api.sendMessage("error", threadID, messageID);
+      message.reply("error");
     }
   }
 };

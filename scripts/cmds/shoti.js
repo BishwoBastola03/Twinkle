@@ -1,37 +1,45 @@
-const axios = require('axios');
-const request = require('request');
+const axios = require("axios");
 const fs = require("fs");
-
+const path = require("path");
 
 module.exports = {
-config: {
-  name: "shoti",
-  version: "1.0",
-  author: "ralph/zed",//goatbot convert
-  countDown: 20,
-  category: "media",
-},
+  config: {
+    name: "wifey",
+    aliases: ["shoti"],
+    author: "Kshitiz",
+    version: "1.0",
+    cooldowns: 10,
+    role: 0,
+    shortDescription: "Get random wifey ",
+    longDescription: "Get random wifey video",
+    category: "fun",
+    guide: "{p}shoti",
+  },
 
-langs: {
-  vi: {},
-  en: {},
-},
-  
-  onStart: async function ({ api, event }) {
-  
-  api.sendMessage(`⏱️ | Video is sending please wait.`, event.threadID, event.messageID);
-axios.get('https://apivideo.saikidesu-support.repl.co/tiktok?apikey=opa').then(res => {
-  let ext = res.data.url.substring(res.data.url.lastIndexOf(".") + 1);
-  let callback = function () {
-          api.sendMessage({
-                                                body: `Shoti Viet Version 🤍`,
-            attachment: fs.createReadStream(__dirname + `/cache/shoti.${ext}`)
-          }, event.threadID, () => fs.unlinkSync(__dirname + `/cache/shoti.${ext}`), event.messageID);
-        };
-        request(res.data.url).pipe(fs.createWriteStream(__dirname + `/cache/shoti.${ext}`)).on("close", callback);
-      }) .catch(err => {
-                     api.sendMessage("api error status: 200", event.threadID, event.messageID);
-    api.setMessageReaction("😢", event.messageID, (err) => {}, true);
-                  })     
-},
+  onStart: async function ({ api, event, args, message }) {
+    api.setMessageReaction("💐", event.messageID, (err) => {}, true);
+
+    try {
+      const response = await axios.get(`https://wifey-shoti.onrender.com/kshitiz`, { responseType: "stream" });
+
+      const tempVideoPath = path.join(__dirname, "cache", `${Date.now()}.mp4`);
+
+      const writer = fs.createWriteStream(tempVideoPath);
+      response.data.pipe(writer);
+
+      writer.on("finish", async () => {
+        const stream = fs.createReadStream(tempVideoPath);
+
+        message.reply({
+          body: `Heres your shoti 😸`,
+          attachment: stream,
+        });
+
+        api.setMessageReaction("🌸", event.messageID, (err) => {}, true);
+      });
+    } catch (error) {
+      console.error(error);
+      message.reply("Sorry, an error occurred while processing your request.");
+    }
+  }
 };

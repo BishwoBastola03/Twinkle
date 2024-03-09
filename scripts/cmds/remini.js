@@ -1,55 +1,59 @@
-const axios = require('axios');
-const fs = require('fs-extra');
+const { writeFileSync, createReadStream, existsSync, mkdirSync } = require("fs");
+const { join } = require("path");
+const axios = require("axios");
+const tinyurl = require('tinyurl');
 
 module.exports = {
   config: {
-    name: "remini",
-    aliases: ["remini3"],
-    author: "Hazeyy/kira x Aesther", // hindi ito collab, ako kasi nag convert :>
-    version: "69",
-    cooldowns: 5,
-    role: 0,
-    shortDescription: {
-      en: "remini filter"
-    },
-    longDescription: {
-      en: "remini filter"
-    },
-    category: "image",
-    guide: {
-      en: "{p}{n} [reply to an img]"
-    }
+  name: "remini",
+  aliases: [],
+  version: "1.0",
+  author: "Kshitiz",
+  countDown: 20,
+  role: 0,
+  shortDescription: "remini",
+  longDescription: "enhance the image quality",
+  category: "tool",
+  guide: {
+    en: "{p}remini (reply to image)",
+  }
+    
   },
 
-  onStart: async function ({ api, event }) {
-    const args = event.body.split(/\s+/);
-    args.shift();
+  onStart: async function ({ message, event, api }) {
+    api.setMessageReaction("🕐", event.messageID, (err) => {}, true);
+    const { type: a, messageReply: b } = event;
+    const { attachments: c, threadID: d, messageID: e } = b || {};
 
-    const pathie = __dirname + `/cache/zombie.jpg`;
-    const { threadID, messageID } = event;
+    if (a === "message_reply" && c) {
+      const [f] = c;
+      const { url: g, type: h } = f || {};
 
-    const photoUrl = event.messageReply.attachments[0] ? event.messageReply.attachments[0].url : args.join(" ");
-
-    if (!photoUrl) {
-      api.sendMessage("📸 𝖯𝗅𝖾𝖺𝗌𝖾 𝗋𝖾𝗉𝗅𝗎 𝗍𝗈 𝖺 𝗉𝗁𝗈𝗍𝗈 𝗍𝗈 𝗉𝗋𝗈𝖼𝖾𝖾𝖽 𝖾𝗇𝗁𝖺𝗇𝖼𝗂𝗇𝗀 𝗂𝗆𝖺𝗀𝖾𝗌.", threadID, messageID);
-      return;
-    }
-
-    api.sendMessage("🕟 | 𝖤𝗇𝗁𝖺𝗇𝖼𝗂𝗇𝗀, 𝗉𝗅𝖾𝖺𝗌𝖾 𝗐𝖺𝗂𝗍 𝖿𝗈𝗋 𝖺 𝗆𝗈𝗆𝖾𝗇𝗍...", threadID, async () => {
-      try {
-        const response = await axios.get(`https://hazeyy-apis-combine.kyrinwu.repl.co/api/try/remini?url=${encodeURIComponent(photoUrl)}`);
-        const processedImageURL = response.data.image_data;
-        const img = (await axios.get(processedImageURL, { responseType: "arraybuffer" })).data;
-
-        fs.writeFileSync(pathie, Buffer.from(img, 'binary'));
-
-        api.sendMessage({
-          body: "✨ 𝖤𝗇𝗁𝖺𝗇𝖼𝖾𝖉 𝖲𝗎𝖼𝖼𝖾𝗌𝖿𝗎𝗅𝗅𝗒",
-          attachment: fs.createReadStream(pathie)
-        }, threadID, () => fs.unlinkSync(pathie), messageID);
-      } catch (error) {
-        api.sendMessage(`🔴 𝖤𝗋𝗋𝗈𝗋 𝗉𝗋𝗈𝖼𝖾𝗌𝗌𝗂𝗇𝗀 𝗂𝗆𝖺𝗀𝖾: ${error}`, threadID, messageID);
+      if (!f || !["photo", "sticker"].includes(h)) {
+        return message.reply("❌ | Reply must be an image.");
       }
-    });
+
+      try {
+        const i = await tinyurl.shorten(g);
+        const { data: j } = await axios.get(`https://ai-tools.replit.app/remini?url=${encodeURIComponent(i)}`, {
+          responseType: "arraybuffer"
+        });
+
+        const k = join(__dirname, "cache");
+        if (!existsSync(k)) {
+          mkdirSync(k, { recursive: true });
+        }
+
+        const l = join(k, "remi_image.png");
+        writeFileSync(l, Buffer.from(j));
+
+        message.reply({ attachment: createReadStream(l) });
+      } catch (m) {
+        console.error(m);
+        message.reply("❌ | Error occurred while enhancing image.");
+      }
+    } else {
+      message.reply("❌ | Please reply to an image.");
+    }
   }
 };

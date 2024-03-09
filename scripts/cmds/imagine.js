@@ -1,45 +1,55 @@
-const axios = require('axios');
-const fs = require('fs');
-const { get } = require('request-promise');
+const fs = require("fs");
+const axios = require("axios");
 
 module.exports = {
   config: {
-    name: 'imagine',
+    name: "imagine",
     aliases: [],
-    version: '1.0',
-    author: 'kshitiz',
-    countDown: 10,
+    author: "kshitiz",
+    version: "1.0",
+    cooldowns: 5,
     role: 0,
-    shortDescription: 'Generate an image.',
-    longDescription: 'Generate an image.',
-    category: 'fun',
-    guide: '{pn}[prompt | model]',
+    shortDescription: {
+      en: ""
+    },
+    longDescription: {
+      en: "generate an image using the 'imagine' API"
+    },
+    category: "𝗠𝗘𝗗𝗜𝗔",
+    guide: {
+      en: "[prompt]"
+    }
   },
+  onStart: async function ({ api, event, args }) {
+    let path = __dirname + "/cache/image.png";
+    let prompt = args.join(" ");
 
-  onStart: async function ({ api, args, message, event }) {
-    let path = __dirname + '/cache/image.png';
-    const tzt = args.join(' ').split('|').map(item => item.trim());
-    let txt = tzt[0];
-    let txt2 = tzt[1];
+    if (args.length === 0) {
+      return api.sendMessage("Please provide a prompt.", event.threadID, event.messageID);
+    }
 
     let tid = event.threadID;
     let mid = event.messageID;
 
-    if (!args[0] || !txt || !txt2) {
-      return api.sendMessage('Please provide a prompt and a model.', tid, mid);
-    }
-
     try {
-      api.sendMessage('⏳ Generating...', tid, mid);
+      api.sendMessage("⏳ Generating... please wait, it will take time.", tid, mid);
 
-      let enctxt = encodeURIComponent(txt);
-      let url = `https://arjhil-prodia-api.arjhilbard.repl.co/generate?prompt=${enctxt}&model=${txt2}`;
+      let enctxt = encodeURIComponent(prompt);
+      let url = `https://imagine-kshitiz.onrender.com/imagine?prompt=${enctxt}`;
 
-      let result = await axios.get(url, { responseType: 'arraybuffer' });
-      fs.writeFileSync(path, result.data);
-      api.sendMessage({ attachment: fs.createReadStream(path) }, tid, () => fs.unlinkSync(path), mid);
+      let response = await axios.get(url, { responseType: "json" });
+
+      let imageUrl = response.data.imageUrl;
+
+      let imageResponse = await axios.get(imageUrl, { responseType: "stream" });
+
+      imageResponse.data.pipe(fs.createWriteStream(path));
+
+      imageResponse.data.on("end", () => {
+        api.sendMessage({ attachment: fs.createReadStream(path) }, tid, () => fs.unlinkSync(path), mid);
+      });
     } catch (e) {
       return api.sendMessage(e.message, tid, mid);
     }
-  },
+  }
 };

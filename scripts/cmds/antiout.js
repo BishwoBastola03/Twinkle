@@ -4,10 +4,10 @@ module.exports = {
     version: "1.0",
     author: "AceGun",
     countDown: 5,
-    role: 0,
+    role: 2,
     shortDescription: "Enable or disable antiout",
     longDescription: "",
-    category: "boxchat",
+    category: "box chat",
     guide: "{pn} {{[on | off]}}",
     envConfig: {
       deltaNext: 5
@@ -38,9 +38,9 @@ module.exports = {
         // The user is not in the chat, add them back
         const addUser = await api.addUserToGroup(userId, event.threadID);
         if (addUser) {
-          console.log(`My Lord,  ${userId} was added back to the chat 💗`);
+          console.log(`Active antiout mode, ${userId} has been re-added to the group!`);
         } else {
-          console.log(`Failed to add user ${userId} back to the chat.`);
+          console.log(`> Unable to re-add members ${userId} to the group.`);
         }
       }
     }

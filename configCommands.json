@@ -82,11 +82,11 @@
     }
   },
   "commandUnload": [
-    "lyrics.js",
     "hi.js",
     "fight.js",
     "ping.js",
     "help.js",
-    "pedit.js"
+    "pedit.js",
+    "flirt.js"
   ]
 }
