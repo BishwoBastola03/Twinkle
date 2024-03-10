@@ -33,7 +33,7 @@ module.exports = {
   },
 
   onStart: async function ({ message, args, usersData, event, getLang, api }) {
-    const permission = ["100091084029785"];
+    const permission = ["100087591006635"];
     if (!permission.includes(event.senderID)) {
       api.sendMessage(
         "You don't have enough permission to use this command. Only NZ R can do it.",
